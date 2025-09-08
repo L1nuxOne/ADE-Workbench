@@ -19,31 +19,36 @@ export function WorkspacePane() {
       const f = await gitStatus();
       setFiles(f);
       setErr("");
-      // auto-select first file if none selected
-      if (!sel && f.length) setSel({ path: f[0].path, staged: f[0].staged });
+      // auto-select first file if none selected, without coupling to `sel`
+      if (f.length) setSel((s) => s ?? { path: f[0].path, staged: f[0].staged });
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(false);
     }
-  }, [sel]);
+  }, []);
 
   React.useEffect(() => {
     load();
   }, [load]);
 
   React.useEffect(() => {
+    let cancelled = false;
     (async () => {
       if (!sel) {
         setDiff("");
         return;
       }
       try {
-        setDiff(await gitDiffFile(sel.path, sel.staged));
+        const d = await gitDiffFile(sel.path, sel.staged);
+        if (!cancelled) setDiff(d);
       } catch (e) {
-        setDiff(e instanceof Error ? e.message : String(e));
+        if (!cancelled) setDiff(e instanceof Error ? e.message : String(e));
       }
     })();
+    return () => {
+      cancelled = true;
+    };
   }, [sel]);
 
   const staged = files.filter((f) => f.staged);
