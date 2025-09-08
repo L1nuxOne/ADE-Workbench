@@ -1,6 +1,11 @@
 {
-  "package": { "productName": "ADE-Workbench", "version": "0.0.1" },
+  "build": {
+    "devPath": "http://localhost:5173",
+    "distDir": "../dist",
+    "beforeDevCommand": "npm run dev"
+  },
   "tauri": {
-    "allowlist": { "all": false, "shell": { "all": false } }
-  }
+    "allowlist": { "all": false }
+  },
+  "package": { "productName": "ADE-Workbench", "version": "0.0.1" }
 }
