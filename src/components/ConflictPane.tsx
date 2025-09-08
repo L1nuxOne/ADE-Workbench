@@ -22,10 +22,10 @@ export function ConflictPane() {
   const [order, setOrder] = React.useState<string[]>([]);
   const [totals, setTotals] = React.useState<number[]>([]);
 
-  const refsArr = React.useMemo(
-    () => rawRefs.split(/\s+/).map((s) => s.trim()).filter(Boolean),
-    [rawRefs]
-  );
+  const refsArr = React.useMemo(() => {
+    const arr = rawRefs.split(/\s+/).map((s) => s.trim()).filter(Boolean);
+    return [...new Set(arr)]; // ensure uniqueness
+  }, [rawRefs]);
 
   async function analyze() {
     if (!hasTauri) {
@@ -73,12 +73,16 @@ export function ConflictPane() {
     const csv = matrixToCSV(refs, matrix);
     navigator.clipboard
       .writeText(csv)
-      .catch((e) => setErr(`Copy failed: ${e}`));
+      .catch((e) =>
+        setErr(`Copy failed: ${e instanceof Error ? e.message : String(e)}`)
+      );
   }
   function copyOrder() {
     navigator.clipboard
       .writeText(order.join(" "))
-      .catch((e) => setErr(`Copy failed: ${e}`));
+      .catch((e) =>
+        setErr(`Copy failed: ${e instanceof Error ? e.message : String(e)}`)
+      );
   }
 
   return (

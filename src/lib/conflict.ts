@@ -2,16 +2,28 @@ import { hostRun, hasTauri } from "./host";
 
 export async function listChangedFiles(base: string, ref: string): Promise<string[]> {
   if (!hasTauri) throw new Error("host-unavailable");
+  // Use rename detection so refactors are surfaced; include deletions (D) to catch delete vs modify conflicts.
   const args = [
     "diff",
     "--name-only",
     "--find-renames",
-    "--diff-filter=ACMR",
+    "--diff-filter=ACMRD",
     `${base}..${ref}`,
   ];
   const res = await hostRun("git", args, false);
   if (res.status !== 0) throw new Error(res.stderr || `git diff failed for ${ref}`);
-  return res.stdout.split("\n").map((s) => s.trim()).filter(Boolean);
+  // De-duplicate filenames (some configs can repeat paths). Preserve input order.
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const line of res.stdout.split("\n")) {
+    const f = line.trim();
+    if (!f) continue;
+    if (!seen.has(f)) {
+      seen.add(f);
+      out.push(f);
+    }
+  }
+  return out;
 }
 
 export function buildOverlapMatrix(
@@ -55,8 +67,10 @@ export function buildOverlapMatrix(
 }
 
 export function matrixToCSV(refs: string[], matrix: number[][]): string {
-  const header = ["ref", ...refs].join(",");
-  const rows = refs.map((r, i) => [r, ...matrix[i]].join(","));
+  // CSV with simple quoting for refs (handle commas/spaces).
+  const q = (s: string) => `"${String(s).replace(/"/g, '""')}"`;
+  const header = [q("ref"), ...refs.map(q)].join(",");
+  const rows = refs.map((r, i) => [q(r), ...matrix[i]].join(","));
   return [header, ...rows].join("\n");
 }
 
