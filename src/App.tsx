@@ -2,6 +2,7 @@ import React from "react";
 import { FlowsPane } from "./components/FlowsPane";
 import { PRPane } from "./components/PRPane";
 import { WorkspacePane } from "./components/WorkspacePane";
+import { ConflictPane } from "./components/ConflictPane";
 
 export function App() {
   return (
@@ -13,6 +14,9 @@ export function App() {
         <FlowsPane />
         <div style={{ gridColumn: "1 / span 2" }}>
           <WorkspacePane />
+        </div>
+        <div style={{ gridColumn: "1 / span 2" }}>
+          <ConflictPane />
         </div>
       </div>
     </div>
