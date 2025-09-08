@@ -1,6 +1,7 @@
 import React from "react";
 import { FlowsPane } from "./components/FlowsPane";
 import { PRPane } from "./components/PRPane";
+import { WorkspacePane } from "./components/WorkspacePane";
 
 export function App() {
   return (
@@ -10,6 +11,9 @@ export function App() {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
         <PRPane />
         <FlowsPane />
+        <div style={{ gridColumn: "1 / span 2" }}>
+          <WorkspacePane />
+        </div>
       </div>
     </div>
   );
