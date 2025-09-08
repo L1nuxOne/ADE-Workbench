@@ -1,0 +1,19 @@
+version: "0.2"
+id: merge-train
+name: "Merge Train (dry-run)"
+dryRunDefault: true
+inputs:
+  - key: base
+    label: Base ref
+    default: origin/main
+  - key: train
+    label: Train branch
+    default: merge/train
+  - key: refs
+    label: PRs/branches (space-separated)
+    default: ""
+pre:
+  - check: "git diff --quiet"
+    fail:  "Uncommitted changes present. Commit/stash first."
+steps:
+  - run: "python3 scripts/multimerge_plan.py {{refs}} --base {{base}} --train-branch {{train}}"
