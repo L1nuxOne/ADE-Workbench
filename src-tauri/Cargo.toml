@@ -4,9 +4,11 @@ version = "0.0.1"
 edition = "2021"
 
 [features]
-host = []  # enable host handlers
+# Enabling "host" also enables the optional tauri crate.
+host = ["dep:tauri"]
 
 [dependencies]
-tauri = { version = "1", optional = true }
+# Tauri is optional; only pulled in when building with --features host
+tauri = { version = "1", optional = true}
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
