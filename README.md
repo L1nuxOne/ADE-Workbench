@@ -40,6 +40,17 @@ cargo run --features host --manifest-path src-tauri/Cargo.toml
 
 Runs are **dry-run** by default. The host restricts filesystem access to `ade/flows/` and `kit/flows/`, only allows `git`, `gh`, `python3`, and `bash` commands, enforces a ~60s timeout, and caps output at ~200 KB.
 
+### Tauri dev harness
+
+Run the full app (host + UI) in one command:
+
+```bash
+npm run tauri:dev
+```
+
+This launches Vite and the Tauri host with the safe runner.
+Conflict Preview now supports an optional **hunk-level** estimator (checkbox) which may take longer on large refs.
+
 ## Select PRs → Merge Train
 
 - Reload PRs (needs host & `gh`)
