@@ -40,6 +40,12 @@ cargo run --features host --manifest-path src-tauri/Cargo.toml
 
 Runs are **dry-run** by default. The host restricts filesystem access to `ade/flows/` and `kit/flows/`, only allows `git`, `gh`, `python3`, and `bash` commands, enforces a ~60s timeout, and caps output at ~200 KB.
 
+## Select PRs → Merge Train
+
+- Reload PRs (needs host & `gh`)
+- Select several → “Send to Merge Train”
+- Go to Flows → Merge Train → Preview/Run (dry-run)
+
 ## Continuous Integration
 
 The project relies on a GitHub Actions workflow to verify changes. Each run performs the following steps:
