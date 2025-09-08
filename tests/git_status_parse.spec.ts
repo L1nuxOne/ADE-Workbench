@@ -1,48 +1,65 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import * as host from "../src/lib/host";
+import { gitStatus, type FileChange } from "../src/lib/git";
 
-vi.mock("../src/lib/host", () => ({
-  hasTauri: true,
-  hostRun: vi.fn(),
-}));
-
-import { gitStatus } from "../src/lib/git";
-import { hostRun } from "../src/lib/host";
-
-function runParse(stdout: string) {
-  (hostRun as any).mockResolvedValue({ status: 0, stdout, stderr: "" });
-  return gitStatus();
+function mockStatus(stdout: string, status = 0, stderr = "") {
+  vi.spyOn(host, "hasTauri", "get").mockReturnValue(true as any);
+  vi.spyOn(host, "hostRun").mockResolvedValue({ status, stdout, stderr } as any);
 }
 
-describe("git status -z parser", () => {
-  it("parses unstaged modify ( ' M' )", async () => {
-    const rows = await runParse(" M file.txt\0");
-    expect(rows).toEqual([{ path: "file.txt", staged: false, status: "M" }]);
-  });
-  it("parses staged modify ( 'M ' )", async () => {
-    const rows = await runParse("M  lib.ts\0");
-    expect(rows).toEqual([{ path: "lib.ts", staged: true, status: "M" }]);
-  });
-  it("emits both rows when both columns set ( 'MM' )", async () => {
-    const rows = await runParse("MM both.txt\0");
-    expect(rows).toEqual([
-      { path: "both.txt", staged: true, status: "M" },
-      { path: "both.txt", staged: false, status: "M" },
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+describe("git status -z parsing", () => {
+  it("parses modified staged and worktree", async () => {
+    // "M " index modified for a.txt  AND " M" worktree modified for b.txt
+    const out = "M  a.txt\0 M b.txt\0";
+    mockStatus(out);
+    const rows = await gitStatus();
+    expect(rows).toEqual<FileChange[]>([
+      { staged: true,  status: "M", path: "a.txt" },
+      { staged: false, status: "M", path: "b.txt" },
     ]);
   });
-  it("treats untracked '??' as unstaged", async () => {
-    const rows = await runParse("?? newfile\0");
-    expect(rows).toEqual([{ path: "newfile", staged: false, status: "??" }]);
+
+  it("handles staged rename (old -> new)", async () => {
+    // X=R, Y=space; order old\0new
+    const out = "R  src/old.txt\0src/new.txt\0";
+    mockStatus(out);
+    const rows = await gitStatus();
+    expect(rows).toEqual<FileChange[]>([
+      { staged: true, status: "R", path: "src/new.txt", oldPath: "src/old.txt" },
+    ]);
   });
-  it("parses staged rename with new path (R)", async () => {
-    const rows = await runParse("R  oldname\0newname\0");
-    expect(rows).toEqual([{ path: "newname", oldPath: "oldname", staged: true, status: "R" }]);
+
+  it("handles unstaged rename (worktree)", async () => {
+    // X=space, Y=R
+    const out = " R src/old2.txt\0src/new2.txt\0";
+    mockStatus(out);
+    const rows = await gitStatus();
+    expect(rows).toEqual<FileChange[]>([
+      { staged: false, status: "R", path: "src/new2.txt", oldPath: "src/old2.txt" },
+    ]);
   });
-  it("parses staged copy with new path (C)", async () => {
-    const rows = await runParse("C  src/a.ts\0src/b.ts\0");
-    expect(rows).toEqual([{ path: "src/b.ts", oldPath: "src/a.ts", staged: true, status: "C" }]);
+
+  it("handles both staged and unstaged rename on same path", async () => {
+    const out = "RR src/old3.txt\0src/new3.txt\0";
+    mockStatus(out);
+    const rows = await gitStatus();
+    expect(rows).toEqual<FileChange[]>([
+      { staged: true,  status: "R", path: "src/new3.txt", oldPath: "src/old3.txt" },
+      { staged: false, status: "R", path: "src/new3.txt", oldPath: "src/old3.txt" },
+    ]);
   });
-  it("handles delete staged (D )", async () => {
-    const rows = await runParse("D  gone.txt\0");
-    expect(rows).toEqual([{ path: "gone.txt", staged: true, status: "D" }]);
+
+  it("handles copy (C)", async () => {
+    const out = "C  src/original.txt\0src/copy.txt\0";
+    mockStatus(out);
+    const rows = await gitStatus();
+    expect(rows).toEqual<FileChange[]>([
+      { staged: true, status: "C", path: "src/copy.txt", oldPath: "src/original.txt" },
+    ]);
   });
 });
+

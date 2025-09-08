@@ -8,63 +8,58 @@ export type FileChange = {
 };
 
 export async function gitStatus(): Promise<FileChange[]> {
-  if (!hasTauri) throw new Error("host-unavailable");
-  // porcelain=v1, NUL-delimited for safer parsing
-  const res = await hostRun("git", ["status", "--porcelain=v1", "-z"], false);
+  if (!hasTauri) throw new Error("host unavailable: Tauri host required");
+  const res = await hostRun("git", ["status", "--porcelain=v1", "-z"], true);
   if (res.status !== 0) throw new Error(res.stderr || "git status failed");
-
   const out: FileChange[] = [];
-  const chunks = res.stdout.split("\0"); // keep empties for indexing safety
+  const chunks = res.stdout.split("\0"); // keep empties to index safely
 
-  // Iterate over NUL chunks. Each record begins with "XY " + path.
+  // Iterate NUL-delimited records of the form: "XY <path1>\0[<path2>\0]"
+  // For renames/copies, Git short format shows "ORIG_PATH -> PATH" (old -> new);
+  // in -z the arrow is dropped but order remains old\0new. See git-status docs.
+  // https://git-scm.com/docs/git-status#_short_format
   for (let i = 0; i < chunks.length; i++) {
     const rec = chunks[i];
-    if (!rec) continue;
-    if (rec.length < 3) continue; // must at least have XY + space
-
+    if (!rec || rec.length < 3) continue; // need XY + space at least
     const X = rec[0]; // index column
     const Y = rec[1]; // worktree column
     const sp = rec[2];
     if (sp !== " ") continue; // malformed
 
-    // path1 lives after "XY "
-    const path1 = rec.slice(3);
-    let statusIndex = X;
-    let statusWork = Y;
+    const path1 = rec.slice(3); // first path (old for R/C)
+    const isIndexRC = X === "R" || X === "C";
+    const isWorkRC  = Y === "R" || Y === "C";
 
-    // Rename/Copy: when X is R or C (score may be appended in v1)
-    let isRenameOrCopy = X === "R" || X === "C";
-    // In -z mode, git emits: "XY path1\0path2\0" (no " -> ")
+    // If either side is R/C, a second path chunk follows this record.
     let path2: string | undefined;
-    if (isRenameOrCopy) {
+    if (isIndexRC || isWorkRC) {
       const next = chunks[i + 1];
       if (next) {
-        path2 = next;
-        i++; // consume the extra path chunk
+        path2 = next; // second path (new for R/C)
+        i++;          // consume extra path
       }
     }
 
-    // Untracked "??" is purely worktree; do not mark staged
-    const isUntracked = X === "?" && Y === "?";
+    const isUntracked = X === "?" && Y === "?"; // purely worktree
 
-    // Emit rows:
-    // 1) Index (staged) row if X is not space AND not untracked "?"
+    // Emit staged row (index side) when applicable
     if (X !== " " && !isUntracked) {
-      const status = isRenameOrCopy ? (X as string) : X;
       const row: FileChange = {
         staged: true,
-        status: String(status),
-        path: isRenameOrCopy ? (path2 ?? path1) : path1,
-        ...(isRenameOrCopy ? { oldPath: path1 } : {}),
+        status: String(X),
+        path: isIndexRC ? (path2 ?? path1) : path1,
+        ...(isIndexRC ? { oldPath: path1 } : {}),
       };
       out.push(row);
     }
-    // 2) Worktree (unstaged) row if Y is not space
+
+    // Emit unstaged row (worktree side) when applicable
     if (Y !== " ") {
       const row: FileChange = {
         staged: false,
         status: String(isUntracked ? "??" : Y),
-        path: path1, // worktree refers to current worktree path
+        path: isWorkRC ? (path2 ?? path1) : path1,
+        ...(isWorkRC ? { oldPath: path1 } : {}),
       };
       out.push(row);
     }
