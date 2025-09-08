@@ -1,6 +1,7 @@
 import React from "react";
 import { discoverFlows, template, type DiscoveredFlow } from "../lib/flows";
 import { loadFlowVars, saveFlowVars } from "../lib/flowInputs";
+import { parseCommand } from "../lib/cmd";
 import { hasTauri, hostRun } from "../lib/host";
 
 export function FlowsPane() {
@@ -107,13 +108,26 @@ function FlowCard({ flow }: { flow: DiscoveredFlow }) {
 
   async function onRun(idx: number) {
     const cmd = cmds[idx];
-    const parts = cmd.trim().split(/\s+/);
-    const [c, ...args] = parts;
+    const parts = parseCommand(cmd.trim());
+    if (!parts.length) {
+      setErrs("Empty command");
+      return;
+    }
+    if (!hasTauri) {
+      setErrs("Host unavailable");
+      return;
+    }
     try {
-      const res = await hostRun(c, args, true);
-      setLogs((prev) => ({ ...prev, [idx]: (res.stdout || "") + (res.stderr ? `\nERR:\n${res.stderr}` : "") }));
+      const res = await hostRun(parts[0], parts.slice(1), true);
+      setLogs((prev) => ({
+        ...prev,
+        [idx]: (res.stdout || "") + (res.stderr ? `\nERR:\n${res.stderr}` : ""),
+      }));
     } catch (e: any) {
-      setLogs((prev) => ({ ...prev, [idx]: `error: ${e?.message ?? String(e)}` }));
+      setLogs((prev) => ({
+        ...prev,
+        [idx]: `error: ${e?.message ?? String(e)}`,
+      }));
     }
   }
 

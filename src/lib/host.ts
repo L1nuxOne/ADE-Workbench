@@ -8,5 +8,5 @@ export async function hostRead(path: string): Promise<string> {
 
 export async function hostRun(cmd: string, args: string[], dryRun = true) {
   if (!hasTauri) throw new Error("host-unavailable");
-  return await g.__TAURI__.invoke("run", { spec: { cmd, args, dryRun } });
+  return await g.__TAURI__.invoke("run", { spec: { cmd, args, dry_run: dryRun } });
 }
