@@ -50,6 +50,7 @@ Runs are **dry-run** by default. The host restricts filesystem access to `ade/fl
 
 - Requires host and `git` in PATH.
 - Shows staged/unstaged files and diff for selection.
+- Handles renames/copies and files with both staged & unstaged changes.
 - Read-only; no stage/unstage actions (coming later).
 
 ## Continuous Integration
