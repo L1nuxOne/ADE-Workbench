@@ -11,6 +11,10 @@ This repository contains the ADE-Workbench project.
 - Rust check: `npm run tauri:check`
 - CI runs these Node and Rust checks on pushes and pull requests.
 
+## Run a flow (preview-only)
+
+Use the Flows pane in the app to experiment with bundled flows without executing them. Edit the inputs, click **Preview** to resolve the commands, then **Copy** and run them manually in your terminal.
+
 ## Continuous Integration
 
 The project relies on a GitHub Actions workflow to verify changes. Each run performs the following steps:
