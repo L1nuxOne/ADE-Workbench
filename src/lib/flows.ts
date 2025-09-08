@@ -88,18 +88,19 @@ export async function discoverFlows(): Promise<DiscoveredFlow[]> {
         try {
           const raw = await devRead(f);
           const parsed = Flow.parse(YAML.parse(raw));
-          const target = f.startsWith("ade/") ? adeDev : kitDev;
-          target.push({
+          const item: DiscoveredFlow = {
             ...parsed,
             source: f.startsWith("ade/") ? "ade" : "kit",
             path: f,
-          });
-        } catch (e: any) {
-          console.error(`Invalid flow ${f}: ${e.message || e}`);
+          };
+          if (item.source === "ade") adeDev.push(item); else kitDev.push(item);
+        } catch (e) {
+          console.error(`Invalid flow ${f}: ${e instanceof Error ? e.message : String(e)}`);
         }
       }
-    } catch {
-      // dev endpoints absent → ignore
+    } catch (e) {
+      // dev endpoints absent → ignore, but keep a breadcrumb for debugging
+      console.debug("Dev flow endpoints unavailable; using fallback sources.", e);
     }
   }
 
@@ -119,19 +120,20 @@ export async function discoverFlows(): Promise<DiscoveredFlow[]> {
             source: dir.startsWith("ade") ? "ade" : "kit",
             path: f,
           });
-        } catch (e: any) {
-          console.error(`Invalid flow ${f}: ${e.message || e}`);
+        } catch (e) {
+          console.error(`Invalid flow ${f}: ${e instanceof Error ? e.message : String(e)}`);
         }
       }
       if (dir.startsWith("ade")) adeFs = flows; else kitFs = flows;
     }
-  } catch {
+  } catch (e) {
     // fs-unavailable (non-Tauri dev) → ignore
+    console.debug("Tauri FS unavailable; skipping repo-local flows.", e);
   }
 
-  // Priority: ade > kit > bundled (dev and FS)
+  // Priority: adeDev > adeFs > kitDev > kitFs > bundled (last-wins)
   const byId = new Map<string, DiscoveredFlow>();
-  for (const arr of [bundled, kitFs, adeFs, kitDev, adeDev]) {
+  for (const arr of [bundled, kitFs, kitDev, adeFs, adeDev]) {
     for (const f of arr) byId.set(f.id, f);
   }
   return Array.from(byId.values());

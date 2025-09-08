@@ -7,17 +7,17 @@ export function FlowsPane() {
   const [err, setErr] = React.useState<string>("");
   const [loading, setLoading] = React.useState(false);
 
-  async function reload() {
+  const reload = React.useCallback(async () => {
     setLoading(true);
     try {
       setFlows(await discoverFlows());
       setErr("");
-    } catch (e: any) {
-      setErr(e.message || String(e));
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
   React.useEffect(() => {
     reload();

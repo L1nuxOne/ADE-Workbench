@@ -34,15 +34,20 @@ export function flowsDevPlugin(): Plugin {
         if (req.url.startsWith("/__flows/read?path=")) {
           const q = new URL(req.url, "http://local");
           const rel = q.searchParams.get("path") || "";
-          // Restrict to allowed roots to avoid arbitrary FS read
-          if (!ROOTS.some((r) => rel.startsWith(r + "/"))) {
+          const absPath = path.resolve(process.cwd(), rel);
+          // Security: ensure absPath is under one of the allowed roots after normalization.
+          const isUnderAllowed = ROOTS.some((r) => {
+            const rootAbs = path.resolve(process.cwd(), r);
+            const relToRoot = path.relative(rootAbs, absPath);
+            return relToRoot && !relToRoot.startsWith("..") && !path.isAbsolute(relToRoot);
+          });
+          if (!isUnderAllowed) {
             res.statusCode = 400;
             res.end("invalid path");
             return;
           }
           try {
-            const abs = path.resolve(process.cwd(), rel);
-            const raw = await fs.readFile(abs, "utf-8");
+            const raw = await fs.readFile(absPath, "utf-8");
             res.setHeader("Content-Type", "text/plain; charset=utf-8");
             res.end(raw);
           } catch (e: any) {
