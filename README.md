@@ -53,6 +53,13 @@ Runs are **dry-run** by default. The host restricts filesystem access to `ade/fl
 - Handles renames/copies and files with both staged & unstaged changes.
 - Read-only; no stage/unstage actions (coming later).
 
+## Conflict Preview (dry-run)
+
+- Select PRs → “Send to Merge Train” (or paste refs), choose base, **Analyze**.
+- Shows per-ref file lists, pairwise overlap matrix, and a suggested merge order.
+- Export via **Copy CSV** and **Copy order** buttons.
+- Note: file-level heuristic; hunk-level conflicts will come in v1.1.
+
 ## Continuous Integration
 
 The project relies on a GitHub Actions workflow to verify changes. Each run performs the following steps:
