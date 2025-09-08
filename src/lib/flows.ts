@@ -49,8 +49,12 @@ async function listDir(dir: string): Promise<string[]> {
     .map((e: any) => `${dir}/${e.name}`);
 }
 
-// bundled via Vite (works without Tauri)
-const bundledGlobs = import.meta.glob<string>("../flows/*.yaml", { as: "raw", eager: true });
+// bundled via Vite (works without Tauri) — use query '?raw' (new API)
+const bundledGlobs = import.meta.glob("../flows/*.yaml", {
+  eager: true,
+  query: "?raw",
+  import: "default",
+}) as Record<string, string>;
 function loadBundled(): DiscoveredFlow[] {
   const out: DiscoveredFlow[] = [];
   for (const [p, raw] of Object.entries(bundledGlobs)) {
