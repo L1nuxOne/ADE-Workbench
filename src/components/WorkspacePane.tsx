@@ -1,5 +1,5 @@
 import React from "react";
-import { hasTauri } from "../lib/host";
+import { hasHost } from "../lib/host";
 import { gitStatus, gitDiffFile, type FileChange } from "../lib/git";
 
 export function WorkspacePane() {
@@ -9,8 +9,10 @@ export function WorkspacePane() {
   const [sel, setSel] = React.useState<{ path: string; staged: boolean } | null>(null);
   const [diff, setDiff] = React.useState("");
 
+  const [hostOk, setHostOk] = React.useState(false);
+  React.useEffect(() => { hasHost().then(setHostOk); }, []);
   const load = React.useCallback(async () => {
-    if (!hasTauri) {
+    if (!hostOk) {
       setErr("Host unavailable — workspace requires host.");
       return;
     }
@@ -26,7 +28,7 @@ export function WorkspacePane() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [hostOk]);
 
   React.useEffect(() => {
     load();

@@ -1,5 +1,5 @@
 import React from "react";
-import { hasTauri } from "../lib/host";
+import { hasHost } from "../lib/host";
 import { listOpenPRs, type PR } from "../lib/gh";
 import { seedMergeTrainRefs } from "../lib/flowLaunch";
 
@@ -9,13 +9,15 @@ export function PRPane() {
   const [err, setErr] = React.useState<string>("");
   const [loading, setLoading] = React.useState(false);
 
+  const [hostOk, setHostOk] = React.useState(false);
+  React.useEffect(() => { hasHost().then(setHostOk); }, []);
   const load = React.useCallback(async () => {
-    if (!hasTauri) { setErr("Host unavailable — paste PRs manually below."); return; }
+    if (!hostOk) { setErr("Host unavailable — paste PRs manually below."); return; }
     setLoading(true);
     try { setPrs(await listOpenPRs()); setErr(""); }
     catch (e) { setErr(e instanceof Error ? e.message : String(e)); }
     finally { setLoading(false); }
-  }, []);
+  }, [hostOk]);
 
   React.useEffect(() => { load(); }, [load]);
 
@@ -52,7 +54,7 @@ export function PRPane() {
       </div>
       {err && <div style={{ color: "#b00", marginTop: 6 }}>{err}</div>}
 
-      {hasTauri && prs.length > 0 && (
+      {hostOk && prs.length > 0 && (
         <div style={{ marginTop: 10 }}>
           {prs.map(p => (
             <label key={p.number} style={{ display: "flex", gap: 8, alignItems: "center", padding: "6px 4px" }}>
@@ -70,7 +72,7 @@ export function PRPane() {
         <button onClick={sendToMergeTrain} disabled={!selectedRefs}>Send to Merge Train</button>
       </div>
 
-      {!hasTauri && (
+      {!hostOk && (
         <ManualFallback />
       )}
     </div>

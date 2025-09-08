@@ -1,5 +1,5 @@
 import React from "react";
-import { hasTauri } from "../lib/host";
+import { hasHost } from "../lib/host";
 import {
   listChangedFiles,
   buildOverlapMatrix,
@@ -37,8 +37,10 @@ export function ConflictPane() {
     return [...new Set(arr)]; // ensure uniqueness
   }, [rawRefs]);
 
+  const [hostOk, setHostOk] = React.useState(false);
+  React.useEffect(() => { hasHost().then(setHostOk); }, []);
   async function analyze() {
-    if (!hasTauri) { setErr("Host unavailable"); return; }
+    if (!hostOk) { setErr("Host unavailable"); return; }
     if (!refsArr.length) { setErr("No refs specified"); return; }
     setErr(""); setBusy(true);
     try {
@@ -109,7 +111,7 @@ export function ConflictPane() {
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <h2>Conflict Preview</h2>
       </div>
-      {!hasTauri && <div style={{ color: "#b00" }}>Host unavailable — requires git access.</div>}
+      {!hostOk && <div style={{ color: "#b00" }}>Host unavailable — requires git access.</div>}
       <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "center" }}>
         <label>
           Base:&nbsp;
