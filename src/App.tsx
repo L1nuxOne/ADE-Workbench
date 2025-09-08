@@ -1,12 +1,16 @@
 import React from "react";
 import { FlowsPane } from "./components/FlowsPane";
+import { PRPane } from "./components/PRPane";
 
 export function App() {
   return (
     <div style={{ fontFamily: "ui-sans-serif, system-ui", padding: 16 }}>
       <h1>ADE-Workbench</h1>
-      <p>Flows discovery (repo-local via Tauri, fallback to bundled).</p>
-      <FlowsPane />
+      <p>Flows discovery (repo-local in dev) and GitOps helpers.</p>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <PRPane />
+        <FlowsPane />
+      </div>
     </div>
   );
 }
