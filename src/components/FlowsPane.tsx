@@ -29,14 +29,29 @@ export function FlowsPane() {
 }
 
 function FlowCard({ flow }: { flow: DiscoveredFlow }) {
+  // Only seed inputs that actually have defaults; do NOT inject empty strings.
   const defaults = React.useMemo(
-    () => Object.fromEntries((flow.inputs ?? []).map((i) => [i.key, i.default ?? ""])),
+    () =>
+      Object.fromEntries(
+        (flow.inputs ?? [])
+          .filter((i) => i.default !== undefined)
+          .map((i) => [i.key, String(i.default)])
+      ),
     [flow]
   );
   const [vars, setVars] = React.useState(() => loadFlowVars(flow.id, defaults));
   const [preview, setPreview] = React.useState<string>("");
   const [errs, setErrs] = React.useState<string | null>(null);
   const [copied, setCopied] = React.useState(false);
+  const timeoutRef = React.useRef<number | undefined>(undefined);
+
+  React.useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   function onChange(key: string, value: string) {
     const next = { ...vars, [key]: value };
@@ -45,13 +60,6 @@ function FlowCard({ flow }: { flow: DiscoveredFlow }) {
   }
 
   function onPreview() {
-    for (const inp of flow.inputs ?? []) {
-      if (inp.required && !String(vars[inp.key] ?? "").trim()) {
-        setErrs(`Missing required input: ${inp.label || inp.key}`);
-        setPreview("");
-        return;
-      }
-    }
     try {
       const lines: string[] = [];
       for (const p of flow.pre ?? []) lines.push(`# pre-check: ${p.check}`);
@@ -59,7 +67,6 @@ function FlowCard({ flow }: { flow: DiscoveredFlow }) {
       for (const step of flow.steps) lines.push(template(step.run, vars));
       setPreview(lines.join("\n"));
       setErrs(null);
-      saveFlowVars(flow.id, vars);
     } catch (e: any) {
       setErrs(e?.message ?? String(e));
       setPreview("");
@@ -67,16 +74,23 @@ function FlowCard({ flow }: { flow: DiscoveredFlow }) {
   }
 
   function onCopy() {
-    navigator.clipboard.writeText(preview).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1000);
-    });
+    navigator.clipboard
+      .writeText(preview)
+      .then(() => {
+        setCopied(true);
+        timeoutRef.current = window.setTimeout(() => setCopied(false), 1000);
+      })
+      .catch((err) => setErrs(`Failed to copy: ${err?.message ?? String(err)}`));
   }
 
-  const missing: Record<string, boolean> = {};
-  for (const inp of flow.inputs ?? []) {
-    if (inp.required && !String(vars[inp.key] ?? "").trim()) missing[inp.key] = true;
-  }
+  const missing: Record<string, boolean> = React.useMemo(() => {
+    const m: Record<string, boolean> = {};
+    for (const inp of flow.inputs ?? []) {
+      const v = (vars[inp.key] ?? "").trim();
+      if (inp.required && !v) m[inp.key] = true;
+    }
+    return m;
+  }, [flow.inputs, vars]);
 
   return (
     <div style={{ border: "1px solid #ddd", borderRadius: 8, padding: 12, marginTop: 8 }}>

@@ -14,5 +14,8 @@ export function loadFlowVars(id: string, defaults: FlowVars): FlowVars {
 export function saveFlowVars(id: string, vars: FlowVars) {
   try {
     localStorage.setItem(KEY(id), JSON.stringify(vars));
-  } catch {}
+  } catch (e) {
+    // Log for debugging; UI remains functional without persistence.
+    console.error("Failed to save flow vars to localStorage:", e);
+  }
 }
