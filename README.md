@@ -1,0 +1,21 @@
+# ADE-Workbench
+
+This repository contains the ADE-Workbench project.
+
+## Bootstrap v0
+
+- Install dependencies: `npm install`
+- Start development server: `npm run dev`
+- Build: `npm run build`
+- Test: `npm test`
+- Rust check: `npm run tauri:check`
+- CI runs these Node and Rust checks on pushes and pull requests.
+
+## Continuous Integration
+
+The project relies on a GitHub Actions workflow to verify changes. Each run performs the following steps:
+- `npm run build` – type check and compile the frontend code.
+- `npm test` – execute the unit test suite.
+- `npm run tauri:check` – ensure the Rust backend compiles cleanly.
+
+Developers should run these commands locally before pushing commits. Aligning local runs with the CI workflow reduces turnaround time and makes failures easier to diagnose.
