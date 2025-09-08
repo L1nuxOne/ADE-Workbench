@@ -1,5 +1,6 @@
 import { z } from "zod";
 import YAML from "yaml";
+import { hostRead, hasTauri } from "./host";
 
 export const FlowInput = z.object({
   key: z.string().min(1),
@@ -40,24 +41,6 @@ async function devRead(p: string): Promise<string> {
   const r = await fetch(`/__flows/read?path=${encodeURIComponent(p)}`);
   if (!r.ok) throw new Error(`dev-read-failed: ${p}`);
   return await r.text();
-}
-
-async function readTextFile(path: string): Promise<string> {
-  // Try Tauri FS if present; else throw to caller.
-  const anyWin = globalThis as any;
-  const tauriFs = anyWin.__TAURI__?.fs;
-  if (!tauriFs?.readTextFile) throw new Error("fs-unavailable");
-  return await tauriFs.readTextFile(path);
-}
-
-async function listDir(dir: string): Promise<string[]> {
-  const anyWin = globalThis as any;
-  const tauriFs = anyWin.__TAURI__?.fs;
-  if (!tauriFs?.readDir) throw new Error("fs-unavailable");
-  const entries = await tauriFs.readDir(dir).catch(() => []);
-  return (entries || [])
-    .filter((e: any) => !e.children && typeof e.name === "string" && e.name.endsWith(".yaml"))
-    .map((e: any) => `${dir}/${e.name}`);
 }
 
 // bundled via Vite (works without Tauri) — use query '?raw' (new API)
@@ -104,31 +87,34 @@ export async function discoverFlows(): Promise<DiscoveredFlow[]> {
     }
   }
 
-  // Try repo-local overrides via Tauri FS
+  // Try repo-local overrides via host bridge
   let adeFs: DiscoveredFlow[] = [];
   let kitFs: DiscoveredFlow[] = [];
-  try {
+  if (hasTauri) {
     for (const dir of ["ade/flows", "kit/flows"]) {
-      const files = await listDir(dir);
-      const flows: DiscoveredFlow[] = [];
-      for (const f of files) {
-        try {
-          const raw = await readTextFile(f);
-          const parsed = Flow.parse(YAML.parse(raw));
-          flows.push({
-            ...parsed,
-            source: dir.startsWith("ade") ? "ade" : "kit",
-            path: f,
-          });
-        } catch (e) {
-          console.error(`Invalid flow ${f}: ${e instanceof Error ? e.message : String(e)}`);
+      try {
+        const manifestRaw = await hostRead(`${dir}/manifest.json`);
+        const files: string[] = JSON.parse(manifestRaw);
+        const flows: DiscoveredFlow[] = [];
+        for (const f of files) {
+          const path = `${dir}/${f}`;
+          try {
+            const raw = await hostRead(path);
+            const parsed = Flow.parse(YAML.parse(raw));
+            flows.push({
+              ...parsed,
+              source: dir.startsWith("ade") ? "ade" : "kit",
+              path,
+            });
+          } catch (e) {
+            console.error(`Invalid flow ${path}: ${e instanceof Error ? e.message : String(e)}`);
+          }
         }
+        if (dir.startsWith("ade")) adeFs = flows; else kitFs = flows;
+      } catch {
+        // manifest missing or unreadable → ignore
       }
-      if (dir.startsWith("ade")) adeFs = flows; else kitFs = flows;
     }
-  } catch (e) {
-    // fs-unavailable (non-Tauri dev) → ignore
-    console.debug("Tauri FS unavailable; skipping repo-local flows.", e);
   }
 
   // Priority: adeDev > adeFs > kitDev > kitFs > bundled (last-wins)

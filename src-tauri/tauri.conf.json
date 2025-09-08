@@ -1,0 +1,6 @@
+{
+  "package": { "productName": "ADE-Workbench", "version": "0.0.1" },
+  "tauri": {
+    "allowlist": { "all": false, "shell": { "all": false } }
+  }
+}
