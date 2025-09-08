@@ -97,7 +97,7 @@ export async function discoverFlows(): Promise<DiscoveredFlow[]> {
 }
 
 // strict variable substitution (no filters yet)
-export function template(cmd: string, vars: Record<string,string>): string {
+export function template(cmd: string, vars: Record<string, string>): string {
   return cmd.replace(/\{\{(\w+)\}\}/g, (_, k) => {
     if (!(k in vars)) throw new Error(`missing var: ${k}`);
     return String(vars[k]);
