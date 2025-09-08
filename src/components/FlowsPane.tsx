@@ -2,7 +2,7 @@ import React from "react";
 import { discoverFlows, template, type DiscoveredFlow } from "../lib/flows";
 import { loadFlowVars, saveFlowVars } from "../lib/flowInputs";
 import { parseCommand } from "../lib/cmd";
-import { hasTauri, hostRun } from "../lib/host";
+import { hasHost, hostRun } from "../lib/host";
 
 export function FlowsPane() {
   const [flows, setFlows] = React.useState<DiscoveredFlow[]>([]);
@@ -113,7 +113,8 @@ function FlowCard({ flow }: { flow: DiscoveredFlow }) {
       setErrs("Empty command");
       return;
     }
-    if (!hasTauri) {
+    const ok = await hasHost();
+    if (!ok) {
       setErrs("Host unavailable");
       return;
     }
@@ -204,11 +205,9 @@ function FlowCard({ flow }: { flow: DiscoveredFlow }) {
         <div key={i} style={{ marginTop: 8 }}>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <code>{c}</code>
-            {hasTauri && (
-              <button onClick={() => onRun(i)} style={{ padding: "4px 6px" }}>
-                Run (dry-run)
-              </button>
-            )}
+            <button onClick={() => onRun(i)} style={{ padding: "4px 6px" }}>
+              Run (dry-run)
+            </button>
           </div>
           {logs[i] && (
             <pre

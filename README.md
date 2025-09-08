@@ -51,6 +51,19 @@ npm run tauri:dev
 This launches Vite and the Tauri host with the safe runner.
 Conflict Preview now supports an optional **hunk-level** estimator (checkbox) which may take longer on large refs.
 
+### Host options
+
+* **Tauri host (native GUI):** `npm run tauri:dev` (requires GTK/WebKit dev libs on Linux).
+* **HTTP host-lite (no GUI deps):**
+
+  ```
+  npm run host:lite   # starts the server on http://127.0.0.1:7345
+  npm run dev         # start Vite UI
+  ```
+  * Set a different port: `ADE_HOST_LITE_PORT=7346 npm run host:lite`
+  * Health endpoints: `/healthz` → "ok", `/version` → crate version
+  The UI auto-detects the host via `/healthz` and uses it when Tauri isn’t present.
+
 ## Select PRs → Merge Train
 
 - Reload PRs (needs host & `gh`)
