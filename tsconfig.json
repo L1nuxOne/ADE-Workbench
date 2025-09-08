@@ -8,7 +8,7 @@
     "strict": true,
     "noEmit": true,
     "skipLibCheck": true,
-    "types": ["vitest/importMeta"]
+    "types": ["vite/client", "vitest/importMeta"]
   },
   "include": ["src", "tests", "vite.config.ts"]
 }

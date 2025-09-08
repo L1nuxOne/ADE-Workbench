@@ -1,4 +1,1 @@
-fn main() {
-    // Placeholder: we'll replace with Tauri later.
-    println!("ADE Workbench host stub");
-}
+fn main() { println!("ADE Workbench host stub"); }

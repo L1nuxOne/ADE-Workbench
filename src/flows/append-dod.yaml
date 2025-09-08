@@ -1,0 +1,10 @@
+version: "0.2"
+id: append-dod
+name: "Append DoD to PR"
+dryRunDefault: true
+inputs:
+  - key: pr
+    label: PR number
+    default: ""
+steps:
+  - run: "bash scripts/append_dod_to_pr.sh {{pr}}"

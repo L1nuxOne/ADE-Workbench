@@ -1,23 +1,17 @@
 name: CI
 
 on:
-  push:
-    branches: [ main, track/** ]
-  pull_request:
-    branches: [ main ]
+  push: { branches: [ main, track/** ] }
+  pull_request: { branches: [ main ] }
 
 jobs:
   node:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-
-      - run: npm ci
+        with: { node-version: 20, cache: 'npm' }
+      - run: npm install
       - run: npm run build
       - run: npm test
 
@@ -25,11 +19,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-
-      - name: Cargo check
-        run: cargo check --manifest-path src-tauri/Cargo.toml
+        with: { toolchain: stable, override: true }
+      - run: cargo check --manifest-path src-tauri/Cargo.toml

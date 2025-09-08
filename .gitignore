@@ -3,6 +3,4 @@ dist
 .vite
 coverage
 .DS_Store
-
-# Rust
 target
