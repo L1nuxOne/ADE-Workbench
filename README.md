@@ -60,7 +60,8 @@ Conflict Preview now supports an optional **hunk-level** estimator (checkbox) wh
   npm run host:lite   # starts the server on http://127.0.0.1:7345
   npm run dev         # start Vite UI
   ```
-
+  * Set a different port: `ADE_HOST_LITE_PORT=7346 npm run host:lite`
+  * Health endpoints: `/healthz` → "ok", `/version` → crate version
   The UI auto-detects the host via `/healthz` and uses it when Tauri isn’t present.
 
 ## Select PRs → Merge Train

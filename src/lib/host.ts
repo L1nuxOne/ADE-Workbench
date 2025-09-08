@@ -5,7 +5,10 @@ const HOST_BASE: string = (import.meta as any)?.env?.VITE_HOST_BASE || "http://1
 export async function hasHost(): Promise<boolean> {
   if (hasTauri) return true;
   try {
-    const r = await fetch(HOST_BASE + "/healthz");
+    const ac = new AbortController();
+    const t = setTimeout(() => ac.abort(), 1500);
+    const r = await fetch(HOST_BASE + "/healthz", { signal: ac.signal });
+    clearTimeout(t);
     return r.ok;
   } catch {
     return false;
