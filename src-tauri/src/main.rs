@@ -1,3 +1,1 @@
-fn main() {
-    println!("ADE Workbench host stub");
-}
+fn main() { println!("ADE Workbench host stub"); }
