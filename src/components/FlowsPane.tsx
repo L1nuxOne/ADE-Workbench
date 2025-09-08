@@ -5,22 +5,34 @@ import { loadFlowVars, saveFlowVars } from "../lib/flowInputs";
 export function FlowsPane() {
   const [flows, setFlows] = React.useState<DiscoveredFlow[]>([]);
   const [err, setErr] = React.useState<string>("");
+  const [loading, setLoading] = React.useState(false);
+
+  async function reload() {
+    setLoading(true);
+    try {
+      setFlows(await discoverFlows());
+      setErr("");
+    } catch (e: any) {
+      setErr(e.message || String(e));
+    } finally {
+      setLoading(false);
+    }
+  }
 
   React.useEffect(() => {
-    (async () => {
-      try {
-        setFlows(await discoverFlows());
-      } catch (e: any) {
-        setErr(e.message || String(e));
-      }
-    })();
+    reload();
   }, []);
 
   if (err) return <div className="p-3 text-red-600">Flows error: {err}</div>;
 
   return (
     <div style={{ padding: 12 }}>
-      <h2>Flows</h2>
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <h2>Flows</h2>
+        <button onClick={reload} disabled={loading} style={{ padding: "4px 10px" }}>
+          {loading ? "Reload…" : "Reload"}
+        </button>
+      </div>
       {flows.map((f) => (
         <FlowCard key={f.id} flow={f} />
       ))}

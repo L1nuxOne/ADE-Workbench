@@ -31,6 +31,17 @@ export type Flow = z.infer<typeof Flow>;
 
 export type DiscoveredFlow = Flow & { source: "bundled" | "ade" | "kit"; path: string };
 
+async function devList(): Promise<string[]> {
+  const r = await fetch("/__flows/list");
+  if (!r.ok) throw new Error("dev-list-failed");
+  return await r.json();
+}
+async function devRead(p: string): Promise<string> {
+  const r = await fetch(`/__flows/read?path=${encodeURIComponent(p)}`);
+  if (!r.ok) throw new Error(`dev-read-failed: ${p}`);
+  return await r.text();
+}
+
 async function readTextFile(path: string): Promise<string> {
   // Try Tauri FS if present; else throw to caller.
   const anyWin = globalThis as any;
@@ -67,9 +78,34 @@ function loadBundled(): DiscoveredFlow[] {
 
 export async function discoverFlows(): Promise<DiscoveredFlow[]> {
   const bundled = loadBundled();
+
+  let adeDev: DiscoveredFlow[] = [];
+  let kitDev: DiscoveredFlow[] = [];
+  if (import.meta.env.DEV) {
+    try {
+      const files = await devList();
+      for (const f of files) {
+        try {
+          const raw = await devRead(f);
+          const parsed = Flow.parse(YAML.parse(raw));
+          const target = f.startsWith("ade/") ? adeDev : kitDev;
+          target.push({
+            ...parsed,
+            source: f.startsWith("ade/") ? "ade" : "kit",
+            path: f,
+          });
+        } catch (e: any) {
+          console.error(`Invalid flow ${f}: ${e.message || e}`);
+        }
+      }
+    } catch {
+      // dev endpoints absent → ignore
+    }
+  }
+
   // Try repo-local overrides via Tauri FS
-  let ade: DiscoveredFlow[] = [];
-  let kit: DiscoveredFlow[] = [];
+  let adeFs: DiscoveredFlow[] = [];
+  let kitFs: DiscoveredFlow[] = [];
   try {
     for (const dir of ["ade/flows", "kit/flows"]) {
       const files = await listDir(dir);
@@ -78,19 +114,24 @@ export async function discoverFlows(): Promise<DiscoveredFlow[]> {
         try {
           const raw = await readTextFile(f);
           const parsed = Flow.parse(YAML.parse(raw));
-          flows.push({ ...parsed, source: dir.startsWith("ade") ? "ade" : "kit", path: f });
+          flows.push({
+            ...parsed,
+            source: dir.startsWith("ade") ? "ade" : "kit",
+            path: f,
+          });
         } catch (e: any) {
           console.error(`Invalid flow ${f}: ${e.message || e}`);
         }
       }
-      if (dir.startsWith("ade")) ade = flows; else kit = flows;
+      if (dir.startsWith("ade")) adeFs = flows; else kitFs = flows;
     }
   } catch {
     // fs-unavailable (non-Tauri dev) → ignore
   }
-  // Priority: ade > kit > bundled (by id, last-wins to allow overrides)
+
+  // Priority: ade > kit > bundled (dev and FS)
   const byId = new Map<string, DiscoveredFlow>();
-  for (const arr of [bundled, kit, ade]) {
+  for (const arr of [bundled, kitFs, adeFs, kitDev, adeDev]) {
     for (const f of arr) byId.set(f.id, f);
   }
   return Array.from(byId.values());
