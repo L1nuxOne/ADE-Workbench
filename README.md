@@ -2,6 +2,15 @@
 
 This repository contains the ADE-Workbench project.
 
+## Dev Doctor
+
+Use the development doctor to verify your environment:
+
+```bash
+nvm use 20
+./scripts/dev/doctor.sh
+```
+
 ## Bootstrap v0
 
 - Install dependencies: `npm install`
