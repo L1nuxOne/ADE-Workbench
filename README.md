@@ -46,9 +46,16 @@ Runs are **dry-run** by default. The host restricts filesystem access to `ade/fl
 - Select several → “Send to Merge Train”
 - Go to Flows → Merge Train → Preview/Run (dry-run)
 
+## Workspace & Diff
+
+- Requires host and `git` in PATH.
+- Shows staged/unstaged files and diff for selection.
+- Read-only; no stage/unstage actions (coming later).
+
 ## Continuous Integration
 
 The project relies on a GitHub Actions workflow to verify changes. Each run performs the following steps:
+
 - `npm run build` – type check and compile the frontend code.
 - `npm test` – execute the unit test suite.
 - `npm run tauri:check` – ensure the Rust backend compiles cleanly.
