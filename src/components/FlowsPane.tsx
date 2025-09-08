@@ -1,6 +1,8 @@
 import React from "react";
 import { discoverFlows, template, type DiscoveredFlow } from "../lib/flows";
 import { loadFlowVars, saveFlowVars } from "../lib/flowInputs";
+import { parseCommand } from "../lib/cmd";
+import { hasTauri, hostRun } from "../lib/host";
 
 export function FlowsPane() {
   const [flows, setFlows] = React.useState<DiscoveredFlow[]>([]);
@@ -53,6 +55,8 @@ function FlowCard({ flow }: { flow: DiscoveredFlow }) {
   );
   const [vars, setVars] = React.useState(() => loadFlowVars(flow.id, defaults));
   const [preview, setPreview] = React.useState<string>("");
+  const [cmds, setCmds] = React.useState<string[]>([]);
+  const [logs, setLogs] = React.useState<Record<number, string>>({});
   const [errs, setErrs] = React.useState<string | null>(null);
   const [copied, setCopied] = React.useState(false);
   const timeoutRef = React.useRef<number | undefined>(undefined);
@@ -76,12 +80,19 @@ function FlowCard({ flow }: { flow: DiscoveredFlow }) {
       const lines: string[] = [];
       for (const p of flow.pre ?? []) lines.push(`# pre-check: ${p.check}`);
       lines.push("# (not executed in preview)");
-      for (const step of flow.steps) lines.push(template(step.run, vars));
+      const cmdLines: string[] = [];
+      for (const step of flow.steps) {
+        const cmd = template(step.run, vars);
+        lines.push(cmd);
+        cmdLines.push(cmd);
+      }
       setPreview(lines.join("\n"));
+      setCmds(cmdLines);
       setErrs(null);
     } catch (e: any) {
       setErrs(e?.message ?? String(e));
       setPreview("");
+      setCmds([]);
     }
   }
 
@@ -93,6 +104,31 @@ function FlowCard({ flow }: { flow: DiscoveredFlow }) {
         timeoutRef.current = window.setTimeout(() => setCopied(false), 1000);
       })
       .catch((err) => setErrs(`Failed to copy: ${err?.message ?? String(err)}`));
+  }
+
+  async function onRun(idx: number) {
+    const cmd = cmds[idx];
+    const parts = parseCommand(cmd.trim());
+    if (!parts.length) {
+      setErrs("Empty command");
+      return;
+    }
+    if (!hasTauri) {
+      setErrs("Host unavailable");
+      return;
+    }
+    try {
+      const res = await hostRun(parts[0], parts.slice(1), true);
+      setLogs((prev) => ({
+        ...prev,
+        [idx]: (res.stdout || "") + (res.stderr ? `\nERR:\n${res.stderr}` : ""),
+      }));
+    } catch (e: any) {
+      setLogs((prev) => ({
+        ...prev,
+        [idx]: `error: ${e?.message ?? String(e)}`,
+      }));
+    }
   }
 
   const missing: Record<string, boolean> = React.useMemo(() => {
@@ -164,6 +200,25 @@ function FlowCard({ flow }: { flow: DiscoveredFlow }) {
           {preview}
         </pre>
       )}
+      {cmds.map((c, i) => (
+        <div key={i} style={{ marginTop: 8 }}>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <code>{c}</code>
+            {hasTauri && (
+              <button onClick={() => onRun(i)} style={{ padding: "4px 6px" }}>
+                Run (dry-run)
+              </button>
+            )}
+          </div>
+          {logs[i] && (
+            <pre
+              style={{ marginTop: 4, background: "#f5f5f5", padding: 8, whiteSpace: "pre-wrap" }}
+            >
+              {logs[i]}
+            </pre>
+          )}
+        </div>
+      ))}
     </div>
   );
 }

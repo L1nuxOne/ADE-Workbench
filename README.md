@@ -30,6 +30,16 @@ Use the Flows pane in the app to experiment with bundled flows without executing
 - Run `npm run dev` and use the **Reload** button in the Flows pane to pick up changes.
 - Production builds only include the bundled `src/flows/` directory.
 
+## Host (optional)
+
+An optional Tauri host bridges the UI with the local repository. To run it locally:
+
+```bash
+cargo run --features host --manifest-path src-tauri/Cargo.toml
+```
+
+Runs are **dry-run** by default. The host restricts filesystem access to `ade/flows/` and `kit/flows/`, only allows `git`, `gh`, `python3`, and `bash` commands, enforces a ~60s timeout, and caps output at ~200 KB.
+
 ## Continuous Integration
 
 The project relies on a GitHub Actions workflow to verify changes. Each run performs the following steps:
