@@ -75,6 +75,12 @@ The UI discovers the backend by requesting `/.well-known/ade.json` from common b
 
 All host interactions go through a `HostClient` instance exposed via React context. Panes call `client.ensure()` before actions to re-check connectivity and then use `client.run()` or `client.read()`. If the host starts after the UI, clicking any action will immediately work once `ensure()` succeeds.
 
+### Host Contract & Dev
+
+- **Start host-lite:** `ADE_HOST_LITE_PERMISSIVE_CORS=1 npm run host:lite`
+- **UI (WSL):** `npm run dev:wsl` (uses `http://127.0.0.1:7345`)
+- **Troubleshooting:** use “Kill host” flows to avoid ghost processes; check `/healthz`.
+
 ## Select PRs → Merge Train
 
 - Reload PRs (needs host & `gh`)

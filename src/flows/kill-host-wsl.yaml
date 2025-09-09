@@ -1,0 +1,5 @@
+version: "0.2"
+id: kill-host-wsl
+name: "Kill host-lite on port 7345 (WSL)"
+steps:
+  - run: "fuser -k 7345/tcp || true"

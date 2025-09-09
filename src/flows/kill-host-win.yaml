@@ -1,0 +1,5 @@
+version: "0.2"
+id: kill-host-win
+name: "Kill host-lite on port 7345 (Windows)"
+steps:
+  - run: "powershell -NoProfile -Command \"$p=(netstat -ano | findstr :7345 | Select-String -Pattern 'LISTENING\\s+(\\d+)$').Matches[0].Groups[1].Value; if($p) { Stop-Process -Id $p -Force }\""
