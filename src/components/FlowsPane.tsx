@@ -115,7 +115,7 @@ function FlowCard({ flow }: { flow: DiscoveredFlow }) {
     }
     const ok = await hasHost();
     if (!ok) {
-      setErrs("Host unavailable");
+      setErrs("Host unavailable — start host-lite (`npm run host:lite`) or Tauri.");
       return;
     }
     try {

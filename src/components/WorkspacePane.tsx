@@ -12,8 +12,10 @@ export function WorkspacePane() {
   const [hostOk, setHostOk] = React.useState(false);
   React.useEffect(() => { hasHost().then(setHostOk); }, []);
   const load = React.useCallback(async () => {
-    if (!hostOk) {
-      setErr("Host unavailable — workspace requires host.");
+    const ok = await hasHost();
+    setHostOk(ok);
+    if (!ok) {
+      setErr("Host unavailable — start host-lite (`npm run host:lite`) or Tauri.");
       return;
     }
     setLoading(true);

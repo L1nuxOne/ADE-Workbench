@@ -3,12 +3,16 @@ import { FlowsPane } from "./components/FlowsPane";
 import { PRPane } from "./components/PRPane";
 import { WorkspacePane } from "./components/WorkspacePane";
 import { ConflictPane } from "./components/ConflictPane";
+import { HostStatus } from "./components/HostStatus";
 
 export function App() {
   return (
     <div style={{ fontFamily: "ui-sans-serif, system-ui", padding: 16 }}>
       <h1>ADE-Workbench</h1>
-      <p>Flows discovery (repo-local in dev) and GitOps helpers.</p>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <p style={{ margin: 0 }}>Flows discovery (repo-local in dev) and GitOps helpers.</p>
+        <HostStatus />
+      </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
         <PRPane />
         <FlowsPane />
