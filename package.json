@@ -4,11 +4,11 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "lint": "eslint --config .eslintrc.cjs --ext .ts,.tsx src",
     "dev": "vite",
     "dev:wsl": "VITE_HOST_BASE=http://127.0.0.1:7345 vite",
     "build": "vite build",
     "test": "vitest run",
+    "lint": "eslint . --max-warnings=0",
     "tauri:check": "cargo check --manifest-path src-tauri/Cargo.toml",
     "host:lite": "cargo run --manifest-path src-host-lite/Cargo.toml",
     "tauri:dev": "tauri dev --features host",

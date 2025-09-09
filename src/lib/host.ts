@@ -40,7 +40,7 @@ export async function hasHost(): Promise<boolean> {
 
 export async function hostRead(path: string): Promise<string> {
   if (hasTauri) {
-    // @ts-ignore
+    // @ts-expect-error Tauri runtime injects __TAURI__ invoke
     return await g.__TAURI__.invoke("read_text_rel", { rel: path });
   }
   const r = await fetch(`${HOST_BASE}/read_text_rel?path=${encodeURIComponent(path)}`);
@@ -50,7 +50,7 @@ export async function hostRead(path: string): Promise<string> {
 
 export async function hostRun(cmd: string, args: string[], dryRun = true) {
   if (hasTauri) {
-    // @ts-ignore
+    // @ts-expect-error Tauri runtime injects __TAURI__ invoke
     return await g.__TAURI__.invoke("run", { spec: { cmd, args, dry_run: dryRun } });
   }
   const r = await fetch(HOST_BASE + "/run", {
