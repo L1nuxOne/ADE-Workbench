@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use std::{path::{Path, PathBuf}, time::Duration};
 use tokio::{fs, process::Command, time::timeout};
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
+use axum::http::{Method, header};
 use tracing::{error, info, Level};
 use tracing_subscriber::FmtSubscriber;
 
@@ -65,18 +66,7 @@ async fn main() {
     .route("/read_text_rel", get(read_text_rel))
     .route("/run", post(run))
     .with_state(state)
-    // Dev-only CORS: allow local Vite + default host-lite origin.
-    .layer({
-      let origins = [
-        "http://127.0.0.1:5173".parse().unwrap(),
-        "http://localhost:5173".parse().unwrap(),
-        "http://127.0.0.1:7345".parse().unwrap(),
-      ];
-      CorsLayer::new()
-        .allow_origin(origins)
-        .allow_methods([axum::http::Method::GET, axum::http::Method::POST])
-        .allow_headers([axum::http::header::CONTENT_TYPE])
-    })
+    .layer(cors_layer())
     .layer(TraceLayer::new_for_http());
 
   let addr = std::net::SocketAddr::from((
@@ -99,6 +89,29 @@ async fn main() {
   }
 }
 
+fn cors_layer() -> CorsLayer {
+  // Allow comma-separated origins in env; else default common dev origins.
+  if std::env::var("ADE_HOST_LITE_PERMISSIVE_CORS").as_deref() == Ok("1") {
+    return CorsLayer::very_permissive();
+  }
+  let mut origins: Vec<axum::http::HeaderValue> = vec![];
+  if let Ok(s) = std::env::var("ADE_HOST_LITE_ORIGINS") {
+    for o in s.split(',').map(|x| x.trim()).filter(|x| !x.is_empty()) {
+      if let Ok(v) = o.parse() { origins.push(v); }
+    }
+  }
+  if origins.is_empty() {
+    origins = vec![
+      "http://127.0.0.1:5173".parse().unwrap(),
+      "http://localhost:5173".parse().unwrap(),
+      "http://wsl.localhost:5173".parse().unwrap(),
+    ];
+  }
+  CorsLayer::new()
+    .allow_origin(origins)
+    .allow_methods([Method::GET, Method::POST])
+    .allow_headers([header::CONTENT_TYPE])
+}
 async fn read_text_rel(State(st): State<AppState>, Query(q): Query<ReadQ>) -> impl IntoResponse {
   let rel = PathBuf::from(q.path);
   if !under_root(&rel, &st.roots) {

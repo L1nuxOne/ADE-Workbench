@@ -12,7 +12,9 @@ export function PRPane() {
   const [hostOk, setHostOk] = React.useState(false);
   React.useEffect(() => { hasHost().then(setHostOk); }, []);
   const load = React.useCallback(async () => {
-    if (!hostOk) { setErr("Host unavailable — paste PRs manually below."); return; }
+    const ok = await hasHost();
+    setHostOk(ok);
+    if (!ok) { setErr("Host unavailable — start host-lite (`npm run host:lite`) or Tauri."); return; }
     setLoading(true);
     try { setPrs(await listOpenPRs()); setErr(""); }
     catch (e) { setErr(e instanceof Error ? e.message : String(e)); }

@@ -63,6 +63,11 @@ Conflict Preview now supports an optional **hunk-level** estimator (checkbox) wh
   * Set a different port: `ADE_HOST_LITE_PORT=7346 npm run host:lite`
   * Health endpoints: `/healthz` → "ok", `/version` → crate version
   The UI auto-detects the host via `/healthz` and uses it when Tauri isn’t present.
+* **Retry:** Use the top-right **Retry** button or switch window focus to trigger a re-check.
+* **CORS env (dev):**
+
+  * `ADE_HOST_LITE_PERMISSIVE_CORS=1 npm run host:lite` (temporarily allow any origin)
+  * `ADE_HOST_LITE_ORIGINS="http://127.0.0.1:5173,http://wsl.localhost:5173"` (custom allowlist)
 
 ## Select PRs → Merge Train
 

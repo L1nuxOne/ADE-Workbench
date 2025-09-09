@@ -40,7 +40,9 @@ export function ConflictPane() {
   const [hostOk, setHostOk] = React.useState(false);
   React.useEffect(() => { hasHost().then(setHostOk); }, []);
   async function analyze() {
-    if (!hostOk) { setErr("Host unavailable"); return; }
+    const ok = await hasHost();
+    setHostOk(ok);
+    if (!ok) { setErr("Host unavailable — start host-lite (`npm run host:lite`) or Tauri."); return; }
     if (!refsArr.length) { setErr("No refs specified"); return; }
     setErr(""); setBusy(true);
     try {
