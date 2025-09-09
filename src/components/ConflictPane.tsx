@@ -1,5 +1,5 @@
 import React from "react";
-import { hasHost } from "../lib/host";
+import { hasHost, onWindowFocusProbe } from "../lib/host";
 import {
   listChangedFiles,
   buildOverlapMatrix,
@@ -38,7 +38,7 @@ export function ConflictPane() {
   }, [rawRefs]);
 
   const [hostOk, setHostOk] = React.useState(false);
-  React.useEffect(() => { hasHost().then(setHostOk); }, []);
+  React.useEffect(() => onWindowFocusProbe(setHostOk), []);
   async function analyze() {
     const ok = await hasHost();
     setHostOk(ok);

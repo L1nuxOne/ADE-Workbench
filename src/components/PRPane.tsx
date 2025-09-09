@@ -1,5 +1,5 @@
 import React from "react";
-import { hasHost } from "../lib/host";
+import { hasHost, onWindowFocusProbe } from "../lib/host";
 import { listOpenPRs, type PR } from "../lib/gh";
 import { seedMergeTrainRefs } from "../lib/flowLaunch";
 
@@ -10,7 +10,7 @@ export function PRPane() {
   const [loading, setLoading] = React.useState(false);
 
   const [hostOk, setHostOk] = React.useState(false);
-  React.useEffect(() => { hasHost().then(setHostOk); }, []);
+  React.useEffect(() => onWindowFocusProbe(setHostOk), []);
   const load = React.useCallback(async () => {
     const ok = await hasHost();
     setHostOk(ok);
