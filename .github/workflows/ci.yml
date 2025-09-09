@@ -14,9 +14,31 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
-      - run: npm install
-      - run: npm run build
-      - run: npm test
+      - name: Install deps
+        run: npm ci
+
+      - name: Start host-lite (background)
+        run: |
+          ADE_HOST_LITE_PERMISSIVE_CORS=1 npm run host:lite > host-lite.log 2>&1 &
+          echo $! > host-lite.pid
+
+      - name: Wait for host-lite
+        run: node scripts/wait-for-host.mjs --base=http://127.0.0.1:7345 --timeout=180000 --interval=1000
+
+      - name: Dump host-lite log on failure
+        if: failure()
+        run: |
+          echo "---- host-lite.log ----"
+          [ -f host-lite.log ] && tail -n +200 host-lite.log || echo "(no log file)"
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test --silent
+
+      - name: Build
+        run: npm run build
 
   rust-check:
     runs-on: ubuntu-latest
