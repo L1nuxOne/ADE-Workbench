@@ -1,7 +1,23 @@
 const g = (globalThis as any);
 export const hasTauri = typeof g.__TAURI__ !== "undefined";
-export const HOST_BASE: string =
-  (import.meta as any)?.env?.VITE_HOST_BASE || "http://127.0.0.1:7345";
+
+// Determine the base URL for the host. Some environments mistakenly provide the
+// string "true" for `VITE_HOST_BASE` (e.g. when using `--host` with Vite), which
+// results in the UI displaying `HTTP host-lite (true)`.  Treat any value that
+// cannot be parsed as a URL as missing and fall back to the default.
+const defaultHostBase = "http://127.0.0.1:7345";
+const envHostBase = (import.meta as any)?.env?.VITE_HOST_BASE;
+let parsedHostBase: string | null = null;
+if (typeof envHostBase === "string" && envHostBase.trim() !== "") {
+  try {
+    // The constructor throws if the value is not a valid URL.
+    parsedHostBase = new URL(envHostBase).toString().replace(/\/$/, "");
+  } catch {
+    // Ignore malformed URLs; we'll fall back to the default below.
+    parsedHostBase = null;
+  }
+}
+export const HOST_BASE: string = parsedHostBase ?? defaultHostBase;
 
 /** Return "tauri" | "http" | null for UI. */
 export function hostKind(): "tauri" | "http" | null {

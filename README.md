@@ -69,6 +69,12 @@ Conflict Preview now supports an optional **hunk-level** estimator (checkbox) wh
   * `ADE_HOST_LITE_PERMISSIVE_CORS=1 npm run host:lite` (temporarily allow any origin)
   * `ADE_HOST_LITE_ORIGINS="http://127.0.0.1:5173,http://wsl.localhost:5173"` (custom allowlist)
 
+### Host Contract & Discovery
+
+The UI discovers the backend by requesting `/.well-known/ade.json` from common base URLs (`http://127.0.0.1:7345`, `http://localhost:7345`, `http://wsl.localhost:7345`) or an explicit `?host=` override. The JSON contains the resolved `base` and capability flags. If the endpoint is missing, the UI falls back to probing `/healthz`.
+
+All host interactions go through a `HostClient` instance exposed via React context. Panes call `client.ensure()` before actions to re-check connectivity and then use `client.run()` or `client.read()`. If the host starts after the UI, clicking any action will immediately work once `ensure()` succeeds.
+
 ## Select PRs → Merge Train
 
 - Reload PRs (needs host & `gh`)

@@ -2,14 +2,18 @@ import React from "react";
 import { discoverFlows, template, type DiscoveredFlow } from "../lib/flows";
 import { loadFlowVars, saveFlowVars } from "../lib/flowInputs";
 import { parseCommand } from "../lib/cmd";
-import { hasHost, hostRun } from "../lib/host";
+import { useHost } from "../lib/hostCtx";
 
 export function FlowsPane() {
   const [flows, setFlows] = React.useState<DiscoveredFlow[]>([]);
   const [err, setErr] = React.useState<string>("");
   const [loading, setLoading] = React.useState(false);
 
+  const { client } = useHost();
+
   const reload = React.useCallback(async () => {
+    await client.ensure();
+    if (client.status === "down") { setErr("Host unavailable — start host-lite (`npm run host:lite`) or Tauri."); setFlows([]); return; }
     setLoading(true);
     try {
       setFlows(await discoverFlows());
@@ -19,13 +23,11 @@ export function FlowsPane() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [client]);
 
   React.useEffect(() => {
     reload();
   }, []);
-
-  if (err) return <div className="p-3 text-red-600">Flows error: {err}</div>;
 
   return (
     <div style={{ padding: 12 }}>
@@ -35,6 +37,7 @@ export function FlowsPane() {
           {loading ? "Reload…" : "Reload"}
         </button>
       </div>
+      {err && <div style={{ color: "#b00", marginTop: 6 }}>{err}</div>}
       {flows.map((f) => (
         <FlowCard key={f.id} flow={f} />
       ))}
@@ -113,13 +116,13 @@ function FlowCard({ flow }: { flow: DiscoveredFlow }) {
       setErrs("Empty command");
       return;
     }
-    const ok = await hasHost();
-    if (!ok) {
+    await client.ensure();
+    if (client.status === "down") {
       setErrs("Host unavailable — start host-lite (`npm run host:lite`) or Tauri.");
       return;
     }
     try {
-      const res = await hostRun(parts[0], parts.slice(1), true);
+      const res = await client.run(parts[0], parts.slice(1), true);
       setLogs((prev) => ({
         ...prev,
         [idx]: (res.stdout || "") + (res.stderr ? `\nERR:\n${res.stderr}` : ""),

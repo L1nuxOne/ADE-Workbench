@@ -1,25 +1,18 @@
 import React from "react";
-import { HOST_BASE, hostKind, hasHost, onWindowFocusProbe } from "../lib/host";
+import { useHost } from "../lib/hostCtx";
 
 export function HostStatus() {
-  const [ok, setOk] = React.useState<boolean>(hostKind() === "tauri");
-  const [kind, setKind] = React.useState<"tauri"|"http"|"none">(hostKind() ?? "none");
-
-  React.useEffect(() => onWindowFocusProbe((v) => {
-    setOk(v);
-    setKind(hostKind() ? "tauri" : (v ? "http" : "none"));
-  }), []);
-
-  async function retry() {
-    const v = await hasHost();
-    setOk(v);
-    setKind(hostKind() ? "tauri" : (v ? "http" : "none"));
-  }
-
+  const { client, status, retry } = useHost();
   const label =
-    kind === "tauri" ? "Tauri host"
-    : ok ? `HTTP host-lite (${HOST_BASE})`
-    : "Not connected";
+    status === "tauri" ? "Tauri host" :
+    status === "http" ? `HTTP host-lite (${client.base})` :
+    "Not connected";
+
+  React.useEffect(() => {
+    function onFocus() { void client.ensure(); }
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [client]);
 
   return (
     <div style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, opacity: 0.9 }}>

@@ -1,5 +1,5 @@
 import React from "react";
-import { hasHost } from "../lib/host";
+import { useHost } from "../lib/hostCtx";
 import { gitStatus, gitDiffFile, type FileChange } from "../lib/git";
 
 export function WorkspacePane() {
@@ -9,28 +9,26 @@ export function WorkspacePane() {
   const [sel, setSel] = React.useState<{ path: string; staged: boolean } | null>(null);
   const [diff, setDiff] = React.useState("");
 
-  const [hostOk, setHostOk] = React.useState(false);
-  React.useEffect(() => { hasHost().then(setHostOk); }, []);
+  const { client } = useHost();
+
   const load = React.useCallback(async () => {
-    const ok = await hasHost();
-    setHostOk(ok);
-    if (!ok) {
+    await client.ensure();
+    if (client.status === "down") {
       setErr("Host unavailable — start host-lite (`npm run host:lite`) or Tauri.");
       return;
     }
     setLoading(true);
     try {
-      const f = await gitStatus();
+      const f = await gitStatus(client);
       setFiles(f);
       setErr("");
-      // auto-select first file if none selected, without coupling to `sel`
       if (f.length) setSel((s) => s ?? { path: f[0].path, staged: f[0].staged });
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(false);
     }
-  }, [hostOk]);
+  }, [client]);
 
   React.useEffect(() => {
     load();
@@ -44,7 +42,7 @@ export function WorkspacePane() {
         return;
       }
       try {
-        const d = await gitDiffFile(sel.path, sel.staged);
+        const d = await gitDiffFile(client, sel.path, sel.staged);
         if (!cancelled) setDiff(d);
       } catch (e) {
         if (!cancelled) setDiff(e instanceof Error ? e.message : String(e));
@@ -53,7 +51,7 @@ export function WorkspacePane() {
     return () => {
       cancelled = true;
     };
-  }, [sel]);
+  }, [sel, client]);
 
   const staged = files.filter((f) => f.staged);
   const unstaged = files.filter((f) => !f.staged);
