@@ -1,8 +1,7 @@
-import { hostRun, hasTauri } from "./host";
+import { hostRun } from "./host";
 
 /** List changed files for ref vs base, with rename detection; include deletions. */
 export async function listChangedFiles(base: string, ref: string): Promise<string[]> {
-  if (!hasTauri) throw new Error("host-unavailable");
   const args = ["diff", "--name-only", "--find-renames", "--diff-filter=ACMRD", `${base}..${ref}`];
   const res = await hostRun("git", args, false);
   if (res.status !== 0) throw new Error(res.stderr || `git diff failed for ${ref}`);
@@ -37,7 +36,6 @@ export function parseUnifiedHunks(diffText: string): Array<{ start: number; end:
 
 /** Get base-relative hunk ranges for a single file under ref vs base. */
 export async function listHunks(base: string, ref: string, file: string) {
-  if (!hasTauri) throw new Error("host-unavailable");
   const args = [
     "diff",
     "--unified=0",

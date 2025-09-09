@@ -1,4 +1,4 @@
-import { hostRun, hasTauri } from "./host";
+import { hostRun } from "./host";
 
 export type PR = {
   number: number;
@@ -8,7 +8,6 @@ export type PR = {
 };
 
 export async function listOpenPRs(): Promise<PR[]> {
-  if (!hasTauri) throw new Error("host-unavailable");
   const args = [
     "pr","list",
     "--state","open",

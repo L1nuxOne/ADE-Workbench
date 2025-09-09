@@ -10,6 +10,8 @@ export function FlowsPane() {
   const [loading, setLoading] = React.useState(false);
 
   const reload = React.useCallback(async () => {
+    const ok = await hasHost();
+    if (!ok) { setErr("Host unavailable — start host-lite (`npm run host:lite`) or Tauri."); setFlows([]); return; }
     setLoading(true);
     try {
       setFlows(await discoverFlows());
@@ -25,8 +27,6 @@ export function FlowsPane() {
     reload();
   }, []);
 
-  if (err) return <div className="p-3 text-red-600">Flows error: {err}</div>;
-
   return (
     <div style={{ padding: 12 }}>
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -35,6 +35,7 @@ export function FlowsPane() {
           {loading ? "Reload…" : "Reload"}
         </button>
       </div>
+      {err && <div style={{ color: "#b00", marginTop: 6 }}>{err}</div>}
       {flows.map((f) => (
         <FlowCard key={f.id} flow={f} />
       ))}

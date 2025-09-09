@@ -1,4 +1,4 @@
-import { hostRun, hasTauri } from "./host";
+import { hostRun } from "./host";
 
 export type FileChange = {
   path: string;
@@ -8,7 +8,6 @@ export type FileChange = {
 };
 
 export async function gitStatus(): Promise<FileChange[]> {
-  if (!hasTauri) throw new Error("host unavailable: Tauri host required");
   const res = await hostRun("git", ["status", "--porcelain=v1", "-z"], true);
   if (res.status !== 0) throw new Error(res.stderr || "git status failed");
   const out: FileChange[] = [];
@@ -68,7 +67,6 @@ export async function gitStatus(): Promise<FileChange[]> {
 }
 
 export async function gitDiffFile(path: string, staged: boolean): Promise<string> {
-  if (!hasTauri) throw new Error("host-unavailable");
   // Avoid user difftools and ensure plain patch
   const baseArgs = ["diff", "--no-color", "--no-ext-diff", "--unified=3"];
   const args = staged ? [...baseArgs, "--staged", "--", path] : [...baseArgs, "--", path];

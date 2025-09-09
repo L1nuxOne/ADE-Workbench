@@ -1,5 +1,5 @@
 import React from "react";
-import { hasHost, onWindowFocusProbe } from "../lib/host";
+import { hasHost } from "../lib/host";
 import { gitStatus, gitDiffFile, type FileChange } from "../lib/git";
 
 export function WorkspacePane() {
@@ -9,11 +9,8 @@ export function WorkspacePane() {
   const [sel, setSel] = React.useState<{ path: string; staged: boolean } | null>(null);
   const [diff, setDiff] = React.useState("");
 
-  const [hostOk, setHostOk] = React.useState(false);
-  React.useEffect(() => onWindowFocusProbe(setHostOk), []);
   const load = React.useCallback(async () => {
     const ok = await hasHost();
-    setHostOk(ok);
     if (!ok) {
       setErr("Host unavailable — start host-lite (`npm run host:lite`) or Tauri.");
       return;
@@ -23,14 +20,13 @@ export function WorkspacePane() {
       const f = await gitStatus();
       setFiles(f);
       setErr("");
-      // auto-select first file if none selected, without coupling to `sel`
       if (f.length) setSel((s) => s ?? { path: f[0].path, staged: f[0].staged });
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(false);
     }
-  }, [hostOk]);
+  }, []);
 
   React.useEffect(() => {
     load();

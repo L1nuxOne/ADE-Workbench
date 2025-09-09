@@ -1,5 +1,5 @@
 import React from "react";
-import { hasHost, onWindowFocusProbe } from "../lib/host";
+import { hasHost } from "../lib/host";
 import {
   listChangedFiles,
   buildOverlapMatrix,
@@ -37,11 +37,8 @@ export function ConflictPane() {
     return [...new Set(arr)]; // ensure uniqueness
   }, [rawRefs]);
 
-  const [hostOk, setHostOk] = React.useState(false);
-  React.useEffect(() => onWindowFocusProbe(setHostOk), []);
   async function analyze() {
     const ok = await hasHost();
-    setHostOk(ok);
     if (!ok) { setErr("Host unavailable — start host-lite (`npm run host:lite`) or Tauri."); return; }
     if (!refsArr.length) { setErr("No refs specified"); return; }
     setErr(""); setBusy(true);
@@ -113,7 +110,6 @@ export function ConflictPane() {
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <h2>Conflict Preview</h2>
       </div>
-      {!hostOk && <div style={{ color: "#b00" }}>Host unavailable — requires git access.</div>}
       <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "center" }}>
         <label>
           Base:&nbsp;

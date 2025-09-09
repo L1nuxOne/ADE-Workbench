@@ -1,5 +1,5 @@
 import React from "react";
-import { hasHost, onWindowFocusProbe } from "../lib/host";
+import { hasHost } from "../lib/host";
 import { listOpenPRs, type PR } from "../lib/gh";
 import { seedMergeTrainRefs } from "../lib/flowLaunch";
 
@@ -9,17 +9,14 @@ export function PRPane() {
   const [err, setErr] = React.useState<string>("");
   const [loading, setLoading] = React.useState(false);
 
-  const [hostOk, setHostOk] = React.useState(false);
-  React.useEffect(() => onWindowFocusProbe(setHostOk), []);
   const load = React.useCallback(async () => {
     const ok = await hasHost();
-    setHostOk(ok);
     if (!ok) { setErr("Host unavailable — start host-lite (`npm run host:lite`) or Tauri."); return; }
     setLoading(true);
     try { setPrs(await listOpenPRs()); setErr(""); }
     catch (e) { setErr(e instanceof Error ? e.message : String(e)); }
     finally { setLoading(false); }
-  }, [hostOk]);
+  }, []);
 
   React.useEffect(() => { load(); }, [load]);
 
@@ -56,7 +53,7 @@ export function PRPane() {
       </div>
       {err && <div style={{ color: "#b00", marginTop: 6 }}>{err}</div>}
 
-      {hostOk && prs.length > 0 && (
+      {prs.length > 0 && (
         <div style={{ marginTop: 10 }}>
           {prs.map(p => (
             <label key={p.number} style={{ display: "flex", gap: 8, alignItems: "center", padding: "6px 4px" }}>
@@ -74,9 +71,7 @@ export function PRPane() {
         <button onClick={sendToMergeTrain} disabled={!selectedRefs}>Send to Merge Train</button>
       </div>
 
-      {!hostOk && (
-        <ManualFallback />
-      )}
+      {err.startsWith("Host unavailable") && <ManualFallback />}
     </div>
   );
 }
