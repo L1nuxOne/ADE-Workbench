@@ -1,5 +1,5 @@
 import React from "react";
-import { hasHost } from "../lib/host";
+import { useHost } from "../lib/hostCtx";
 import { listOpenPRs, type PR } from "../lib/gh";
 import { seedMergeTrainRefs } from "../lib/flowLaunch";
 
@@ -9,14 +9,16 @@ export function PRPane() {
   const [err, setErr] = React.useState<string>("");
   const [loading, setLoading] = React.useState(false);
 
+  const { client } = useHost();
+
   const load = React.useCallback(async () => {
-    const ok = await hasHost();
-    if (!ok) { setErr("Host unavailable — start host-lite (`npm run host:lite`) or Tauri."); return; }
+    await client.ensure();
+    if (client.status === "down") { setErr("Host unavailable — start host-lite (`npm run host:lite`) or Tauri."); return; }
     setLoading(true);
-    try { setPrs(await listOpenPRs()); setErr(""); }
+    try { setPrs(await listOpenPRs(client)); setErr(""); }
     catch (e) { setErr(e instanceof Error ? e.message : String(e)); }
     finally { setLoading(false); }
-  }, []);
+  }, [client]);
 
   React.useEffect(() => { load(); }, [load]);
 

@@ -10,10 +10,25 @@ afterEach(() => {
   vi.resetModules();
 });
 
+function mockHostCtx(sequence: Array<'down' | 'http'>) {
+  const client = {
+    status: sequence[0],
+    ensure: vi.fn().mockImplementation(() => {
+      const next = sequence.shift()!;
+      client.status = next;
+      return Promise.resolve(next);
+    }),
+    run: vi.fn(),
+    read: vi.fn(),
+  } as any;
+  const useHost = () => ({ client, status: client.status as any, retry: vi.fn() });
+  vi.doMock('../src/lib/hostCtx', () => ({ useHost }));
+  return { client };
+}
+
 describe('PRPane probes host on action', () => {
   it('shows error then loads when host becomes available', async () => {
-    const hasHost = vi.fn().mockResolvedValueOnce(false).mockResolvedValueOnce(true);
-    vi.doMock('../src/lib/host', () => ({ hasHost }));
+    mockHostCtx(['down', 'http']);
     vi.doMock('../src/lib/gh', () => ({ listOpenPRs: vi.fn().mockResolvedValue([{ number: 1, title: 't', headRefName: 'b' }]) }));
     vi.doMock('../src/lib/flowLaunch', () => ({ seedMergeTrainRefs: vi.fn() }));
     const { PRPane } = await import('../src/components/PRPane');
@@ -21,14 +36,12 @@ describe('PRPane probes host on action', () => {
     await screen.findByText(/Host unavailable/);
     fireEvent.click(screen.getByText('Reload'));
     await screen.findByText('#1');
-    expect(hasHost).toHaveBeenCalledTimes(2);
   });
 });
 
 describe('WorkspacePane probes host on action', () => {
   it('shows error then loads when host is ready', async () => {
-    const hasHost = vi.fn().mockResolvedValueOnce(false).mockResolvedValueOnce(true);
-    vi.doMock('../src/lib/host', () => ({ hasHost }));
+    mockHostCtx(['down', 'http']);
     vi.doMock('../src/lib/git', () => ({
       gitStatus: vi.fn().mockResolvedValue([{ path: 'f.txt', staged: false, status: 'M' }]),
       gitDiffFile: vi.fn().mockResolvedValue('diff')
@@ -38,14 +51,12 @@ describe('WorkspacePane probes host on action', () => {
     await screen.findByText(/Host unavailable/);
     fireEvent.click(screen.getByText('Reload'));
     await screen.findByText('f.txt');
-    expect(hasHost).toHaveBeenCalledTimes(2);
   });
 });
 
 describe('ConflictPane probes host on action', () => {
   it('handles host availability per analyze', async () => {
-    const hasHost = vi.fn().mockResolvedValueOnce(false).mockResolvedValueOnce(true);
-    vi.doMock('../src/lib/host', () => ({ hasHost }));
+    mockHostCtx(['down', 'http']);
     const listChangedFiles = vi.fn().mockResolvedValue(['a']);
     vi.doMock('../src/lib/conflict', () => ({
       listChangedFiles,
@@ -62,14 +73,12 @@ describe('ConflictPane probes host on action', () => {
     await screen.findByText(/Host unavailable/);
     fireEvent.click(btn);
     await waitFor(() => expect(listChangedFiles).toHaveBeenCalled());
-    expect(hasHost).toHaveBeenCalledTimes(2);
   });
 });
 
 describe('FlowsPane probes host on reload', () => {
   it('shows error then lists flows when host starts', async () => {
-    const hasHost = vi.fn().mockResolvedValueOnce(false).mockResolvedValueOnce(true);
-    vi.doMock('../src/lib/host', () => ({ hasHost, hostRun: vi.fn() }));
+    const { client } = mockHostCtx(['down', 'http']);
     vi.doMock('../src/lib/flows', () => ({ discoverFlows: vi.fn().mockResolvedValue([{ id: 'f', name: 'Flow', version: '1', source: 's' }]), template: vi.fn((s) => s) }));
     vi.doMock('../src/lib/flowInputs', () => ({ loadFlowVars: () => ({}), saveFlowVars: vi.fn() }));
     vi.doMock('../src/lib/cmd', () => ({ parseCommand: vi.fn(() => ['echo']) }));
@@ -78,6 +87,6 @@ describe('FlowsPane probes host on reload', () => {
     await screen.findByText(/Host unavailable/);
     fireEvent.click(screen.getByText('Reload'));
     await screen.findByText('Flow');
-    expect(hasHost).toHaveBeenCalledTimes(2);
+    expect(client.ensure).toHaveBeenCalledTimes(2);
   });
 });

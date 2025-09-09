@@ -6,6 +6,7 @@ use axum::{
   Json, Router,
 };
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::{path::{Path, PathBuf}, time::Duration};
 use tokio::{fs, process::Command, time::timeout};
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
@@ -31,6 +32,17 @@ struct RunReq { spec: RunSpec }
 
 #[derive(Serialize)]
 struct RunRes { dry_run: bool, status: i32, stdout: String, stderr: String }
+
+#[derive(Serialize)]
+struct Config { version: &'static str, base: String, capabilities: Value }
+
+async fn config() -> impl IntoResponse {
+  axum::Json(Config {
+    version: env!("CARGO_PKG_VERSION"),
+    base: "http://127.0.0.1:7345".into(),
+    capabilities: serde_json::json!({ "git": true, "gh": true, "fs": true, "run": true }),
+  })
+}
 
 fn under_root(p: &Path, roots: &[PathBuf]) -> bool {
   let Ok(cwd) = std::env::current_dir() else { return false; };
@@ -63,6 +75,7 @@ async fn main() {
   let app = Router::new()
     .route("/healthz", get(|| async { "ok" }))
     .route("/version", get(|| async { env!("CARGO_PKG_VERSION") }))
+    .route("/.well-known/ade.json", get(config))
     .route("/read_text_rel", get(read_text_rel))
     .route("/run", post(run))
     .with_state(state)

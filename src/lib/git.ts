@@ -1,4 +1,4 @@
-import { hostRun } from "./host";
+import { HostClient } from "./hostClient";
 
 export type FileChange = {
   path: string;
@@ -7,8 +7,8 @@ export type FileChange = {
   oldPath?: string; // for renames/copies
 };
 
-export async function gitStatus(): Promise<FileChange[]> {
-  const res = await hostRun("git", ["status", "--porcelain=v1", "-z"], true);
+export async function gitStatus(client: HostClient): Promise<FileChange[]> {
+  const res = await client.run("git", ["status", "--porcelain=v1", "-z"], true);
   if (res.status !== 0) throw new Error(res.stderr || "git status failed");
   const out: FileChange[] = [];
   const chunks = res.stdout.split("\0"); // keep empties to index safely
@@ -66,11 +66,11 @@ export async function gitStatus(): Promise<FileChange[]> {
   return out;
 }
 
-export async function gitDiffFile(path: string, staged: boolean): Promise<string> {
+export async function gitDiffFile(client: HostClient, path: string, staged: boolean): Promise<string> {
   // Avoid user difftools and ensure plain patch
   const baseArgs = ["diff", "--no-color", "--no-ext-diff", "--unified=3"];
   const args = staged ? [...baseArgs, "--staged", "--", path] : [...baseArgs, "--", path];
-  const res = await hostRun("git", args, false);
+  const res = await client.run("git", args, false);
   if (res.status !== 0) {
     // If file is new and unstaged, diff may be empty; return stderr only if it’s meaningful
     return res.stdout || res.stderr || "";

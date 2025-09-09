@@ -1,4 +1,4 @@
-import { hostRun } from "./host";
+import { HostClient } from "./hostClient";
 
 export type PR = {
   number: number;
@@ -7,14 +7,14 @@ export type PR = {
   headRepositoryOwner?: { login: string };
 };
 
-export async function listOpenPRs(): Promise<PR[]> {
+export async function listOpenPRs(client: HostClient): Promise<PR[]> {
   const args = [
     "pr","list",
     "--state","open",
     "--json","number,title,headRefName,headRepositoryOwner",
     "--limit","100"
   ];
-  const res = await hostRun("gh", args, /*dryRun*/ false);
+  const res = await client.run("gh", args, /*dryRun*/ false);
   if (res.status !== 0) throw new Error(res.stderr || "gh pr list failed");
   try {
     const data = JSON.parse(res.stdout) as PR[];
